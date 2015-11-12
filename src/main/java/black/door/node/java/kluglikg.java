@@ -1,21 +1,22 @@
 package black.door.node.java;
 
-import black.door.node.java.loops.GenericIoLoop;
+import black.door.node.java.loops.BlockingLoop;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Created by nfischer on 10/29/2015.
  */
 public class kluglikg {
 	kluglikg(){
-
 		Object httpRequest = null;
 
-		GenericIoLoop.submit(()->{
+		BlockingLoop.submits(() -> {
 			// get weiner from database
 			return 5;
 		}, n -> {
@@ -27,7 +28,7 @@ public class kluglikg {
 	}
 
 	static void readEntireFile(File f, Consumer<byte[]> callback){
-		GenericIoLoop.submit(() -> {
+		BlockingLoop.submits(() -> {
 			try {
 				return Files.readAllBytes(f.toPath());
 			} catch (IOException e) {
@@ -35,4 +36,11 @@ public class kluglikg {
 			}
 		}, callback);
 	}
+
+	Function<Integer, Integer> cons = new Function<Integer, Integer>() {
+		@Override
+		public Integer apply(Integer integer) {
+			return integer;
+		}
+	};
 }

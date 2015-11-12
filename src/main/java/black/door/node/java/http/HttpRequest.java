@@ -1,5 +1,7 @@
 package black.door.node.java.http;
 
+import black.door.node.java.exception.HttpParsingException;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,6 +10,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by nfischer on 6/6/15.
@@ -19,6 +23,8 @@ public class HttpRequest{
 	private URI uri;
 	private String version;
 	private byte[] body;
+	private Matcher rex;
+	private Map<String, String> queryParams;
 
 	public HttpRequest(HttpVerb method, URI uri, String version){
 		this.verb = method;
@@ -27,11 +33,13 @@ public class HttpRequest{
 		headers = new HashMap<>();
 	}
 
-	public static HttpRequest parse(byte[] request) throws IOException, URISyntaxException {
+	public static HttpRequest parse(byte[] request) throws IOException,
+			URISyntaxException, HttpParsingException {
 		return parse(new ByteArrayInputStream(request), -1);
 	}
 
-	public static HttpRequest parse(InputStream is, int maxBodySize) throws IOException, URISyntaxException, HttpParsingException {
+	public static HttpRequest parse(InputStream is, int maxBodySize)
+			throws IOException, URISyntaxException, HttpParsingException {
 		HttpVerb verb;
 		URI uri;
 		String version;
@@ -41,7 +49,8 @@ public class HttpRequest{
 
 		String[] split = firstLine.split("\\s+");
 		if(split.length < 3)
-			throw new HttpParsingException("Request line does not have 3 parts as described in RFC2616 5.1");
+			throw new HttpParsingException("Request line does not have 3 " +
+					"parts as described in RFC2616 5.1");
 
 		verb = HttpVerb.valueOf(split[0]);
 		uri = new URI(split[1]);
@@ -55,7 +64,44 @@ public class HttpRequest{
 		ret.setBody(body);
 		ret.setHeaders(headers);
 
+		ret.queryParams = ParseTools.parseQueries(uri.getQuery());
+
 		return ret;
+	}
+
+	public void definePathParams(Pattern p) throws IllegalArgumentException{
+		Matcher rex = p.matcher(this.getUri().getPath());
+		if(!rex.find()){
+			throw new IllegalArgumentException();
+		}
+		this.rex = rex;
+	}
+
+	/**
+	 *
+	 * @param name the name of the capture group for the parameter
+	 * @return the path parameter, or null if path parameters have not been
+	 *      defined or if no part of the path matched that parameter
+	 * @throws IllegalArgumentException if there is no parameter with that name
+	 */
+	public String getPathParam(String name) throws IllegalArgumentException{
+		if(rex == null)
+			return null;
+		return rex.group(name);
+	}
+
+	public String getPathParam(int i){
+		if(rex == null)
+			return null;
+		return rex.group(i);
+	}
+
+	public String getQueryParam(String name){
+		return queryParams.get(name);
+	}
+
+	public Map<String, String> getQueryParams(){
+		return queryParams;
 	}
 
 	public HttpRequest putHeader(String headerName, String value){

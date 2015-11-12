@@ -3,24 +3,23 @@ package black.door.node.java.loops;
 import black.door.node.java.function.FunctionalFutureCallback;
 import com.google.common.util.concurrent.*;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
  * Created by nfischer on 10/27/2015.
  */
-public enum GenericIoLoop implements AsyncService{
+public enum BlockingLoop{
 	INST;
 
-	public static <T> Future<T> submits(Supplier<T> operation){
+	public static <T> Future<T> submits(Callable<T> operation){
 		return INST.submit(operation);
 	}
 
-	public static <T> void submits(Supplier<T> operation,
+	public static <T> void submits(Callable<T> operation,
 	                              Consumer<T> successCallback,
 	                              Consumer<Throwable> failureCallback) {
 		INST.submit(operation, successCallback, failureCallback);
@@ -38,7 +37,7 @@ public enum GenericIoLoop implements AsyncService{
 		*/
 	}
 
-	public static <T> void submits(Supplier<T> operation,
+	public static <T> void submits(Callable<T> operation,
 	                              Consumer<T> successCallback) {
 		submits(operation, new FunctionalFutureCallback<>(successCallback));
 	}
@@ -50,31 +49,29 @@ public enum GenericIoLoop implements AsyncService{
 	 * @param callback
 	 * @param <T>
 	 */
-	public static <T> void submits(Supplier<T> operation,
+	public static <T> void submits(Callable<T> operation,
 	                               FunctionalFutureCallback<T> callback){
 		INST.submit(operation, callback);
 	}
 
 	private ListeningExecutorService executorService;
 
-	GenericIoLoop(){
+	BlockingLoop(){
 		executorService = MoreExecutors.listeningDecorator(
 				Executors.newWorkStealingPool());
 	}
 
-	public <T> void submit(Supplier<T> operation,
+	public <T> void submit(Callable<T> operation,
 	                       FunctionalFutureCallback<T> callback){
-		ListenableFuture<T> future = this.executorService.submit(operation::get);
+		ListenableFuture<T> future = this.executorService.submit(operation);
 		Futures.addCallback(future, callback, EventLoop.getExecutorService());
 	}
 
-	@Override
-	public <T> Future<T> submit(Supplier<T> operation) {
-		return this.executorService.submit(operation::get);
+	public <T> Future<T> submit(Callable<T> operation) {
+		return this.executorService.submit(operation::call);
 	}
 
-	@Override
-	public <T> void submit(Supplier<T> operation,
+	public <T> void submit(Callable<T> operation,
 	                       Consumer<T> success,
 	                       Consumer<Throwable> failure) {
 		submit(operation, new FunctionalFutureCallback<>(

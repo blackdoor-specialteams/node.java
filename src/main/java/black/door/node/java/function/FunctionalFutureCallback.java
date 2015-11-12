@@ -1,5 +1,6 @@
 package black.door.node.java.function;
 
+import black.door.node.java.exception.WrappedException;
 import com.google.common.util.concurrent.FutureCallback;
 
 import java.util.function.Consumer;
@@ -12,7 +13,7 @@ public class FunctionalFutureCallback<V> implements FutureCallback<V> {
 	private Consumer<V> success;
 
 	public FunctionalFutureCallback(Consumer<V> success){
-		this(success, Throwable::printStackTrace);
+		this(success, fail -> {throw new WrappedException(fail);});
 	}
 
 	public FunctionalFutureCallback(Consumer<V> success, Consumer<Throwable> failure){

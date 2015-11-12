@@ -4,7 +4,7 @@ package black.door.node.java.exception;
  * Created by nfischer on 10/29/2015.
  */
 public class WrappedException extends RuntimeException {
-	public WrappedException(Exception e){
+	public WrappedException(Throwable e){
 		super(e);
 	}
 	public void reThrow() throws Exception {

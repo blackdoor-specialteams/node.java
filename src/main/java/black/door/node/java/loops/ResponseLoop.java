@@ -4,8 +4,11 @@ import black.door.node.java.exception.WrappedException;
 import black.door.node.java.http.HttpResponse;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by nfischer on 10/30/2015.
@@ -18,10 +21,12 @@ public enum ResponseLoop {
 		executorService = Executors.newWorkStealingPool();
 	}
 
-	public static void sendResponse(HttpResponse response){
-		INST.executorService.submit(() -> {
+	public static Future sendResponse(HttpResponse response, Socket sock){
+		return INST.executorService.submit(() -> {
 			try {
-				response.sendResponse();
+				OutputStream os = sock.getOutputStream();
+				os.write(response.serialize());
+				os.flush();
 			} catch (IOException e) {
 				throw new WrappedException(e);
 			}

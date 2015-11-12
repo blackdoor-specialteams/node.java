@@ -1,14 +1,17 @@
 package black.door.node.java.http;
 
-import black.door.net.http.tools.*;
 import black.door.net.http.tools.ParseTools;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import black.door.node.java.Conf;
+import black.door.node.java.loops.ResponseLoop;
+import static com.google.common.net.HttpHeaders.*;
+import org.apache.commons.httpclient.HttpStatus;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 
 import static black.door.net.http.tools.ParseTools.nextLine;
@@ -17,7 +20,7 @@ import static black.door.net.http.tools.ParseTools.parseHeaders;
 /**
  * Created by nfischer on 6/10/15.
  */
-public class HttpResponse implements black.door.google.common.net.HttpHeaders {
+public class HttpResponse {
     private Map<String, String> headers;
     private int statusCode;
     private String statusMessage;
@@ -50,15 +53,8 @@ public class HttpResponse implements black.door.google.common.net.HttpHeaders {
         this.body = ParseTools.getBody(stream, headers, -1);
     }
 
-    public void end(){
-        throw new NotImplementedException();
-    }
-
-    public void sendResponse() throws IOException {
-        OutputStream os = new BufferedOutputStream(
-                context.getSock().getOutputStream());
-        os.write(this.serialize());
-        os.flush();
+    public Future send(){
+        return ResponseLoop.sendResponse(this, context.getSock());
     }
 
     HttpContext getContext(){
@@ -69,12 +65,11 @@ public class HttpResponse implements black.door.google.common.net.HttpHeaders {
         this.context = context;
     }
 
-    public black.door.net.http.tools.HttpResponse putHeader(String key, String value){
+    public HttpResponse putHeader(String key, String value){
         headers.put(key, value);
         return this;
     }
 
-    @Override
     public String getHeader(String headerName) {
         return headers.get(headerName);
     }
@@ -91,8 +86,18 @@ public class HttpResponse implements black.door.google.common.net.HttpHeaders {
         return statusCode;
     }
 
-    public void setStatusCode(int statusCode) {
+    /**
+     * Sets the status code and message for this response, unless the status
+     * code is not recognized, then only the code is set, then the message is unchanged
+     * @param statusCode
+     * @return this
+     */
+    public HttpResponse setStatusCode(int statusCode) {
         this.statusCode = statusCode;
+        String message = HttpStatus.getStatusText(statusCode);
+        if(message != null)
+            this.statusMessage = message;
+        return this;
     }
 
     public String getStatusMessage() {
@@ -103,7 +108,6 @@ public class HttpResponse implements black.door.google.common.net.HttpHeaders {
         this.statusMessage = statusMessage;
     }
 
-    @Override
     public String getVersion() {
         return version;
     }
@@ -112,7 +116,6 @@ public class HttpResponse implements black.door.google.common.net.HttpHeaders {
         this.version = version;
     }
 
-    @Override
     public byte[] getBody() {
         return body;
     }
@@ -151,13 +154,29 @@ public class HttpResponse implements black.door.google.common.net.HttpHeaders {
     }
 
     public byte[] serialize(){
-        byte[] top = (getLine1() + getHeaderString()).getBytes(StandardCharsets.ISO_8859_1);
+        finalize();
+        byte[] top = (getLine1() + getHeaderString()).getBytes(
+                StandardCharsets.ISO_8859_1);
         if(body != null){
             byte[] serial = Arrays.copyOf(top, top.length + body.length);
             System.arraycopy(body, 0, serial, top.length, body.length);
             return serial;
         }else{
             return top;
+        }
+    }
+
+    public void finalize(){
+        if(!headers.containsKey(SERVER))
+            putHeader(SERVER, Conf.get().getString("nodejava.serverName") +" ("
+                + System.getProperty("os.name") +')');
+
+
+        if(body == null){
+            putHeader(CONTENT_LENGTH, "0");
+        }else{
+            if(!headers.containsKey(CONTENT_LENGTH))
+                putHeader(CONTENT_LENGTH, String.valueOf(body.length));
         }
     }
 

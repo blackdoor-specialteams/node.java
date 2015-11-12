@@ -1,13 +1,20 @@
 package black.door.node.java.http;
 
+import black.door.node.java.exception.HttpParsingException;
 import black.door.struct.ByteQueue;
+import black.door.util.DBP;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by nfischer on 6/10/15.
@@ -61,7 +68,7 @@ public abstract class ParseTools {
         return body;
     }
 
-    private static byte[] read(InputStream is, byte[] bytes) throws IOException {
+    private static byte[] read(InputStream is, byte[] bytes) throws IOException, HttpParsingException {
         int bytesRead = 0;
         for (int r = 0; bytesRead < bytes.length; r = is.read(bytes, bytesRead, bytes.length - bytesRead)){
             if(r == -1)
@@ -84,10 +91,14 @@ public abstract class ParseTools {
         StringBuilder sb = new StringBuilder();
         boolean cr = false;
         for(int read = stream.read();; read = stream.read()){
-            if(read == -1)
+            if(read == -1) {
+                if(sb.length() == 0)
+                    throw new ClosedChannelException();
                 throw new EOFException("EOF reached before line ended.");
+            }
 
             char current = (char) read;
+
             if(current == CR){
                 cr = true;
                 continue;
@@ -106,6 +117,41 @@ public abstract class ParseTools {
             }
         }
         return sb.toString();
+    }
+
+    private static Pattern theRegex = Pattern.compile("((?<field>[\\w\\-\\.~%!$'\\(\\)*+,/?:@]+)=?(?<value>[\\w\\-\\.~%!$'\\(\\)*+,/?:@]*))");
+
+    public static Map<String, String> parseQueries(URL url){
+        try {
+            return parseQueries(url.getQuery());
+        } catch (MalformedURLException e) {
+            black.door.dbp.DBP.error().log(e.toString() + (e.getMessage() == null
+                            ? ""
+                            : ": " + e.getMessage()),
+                    e.getStackTrace());
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public static Map<String, String> parseQueries(String query) throws MalformedURLException {
+        Map<String, String> queries = new HashMap<>();
+        if (query == null)
+            return queries;
+
+        Pattern pattern = theRegex;
+        Matcher matcher = pattern.matcher(query);
+
+        try {
+            while (matcher.find()) {
+                String field = matcher.group("field");
+                String value = matcher.group("value");
+                queries.put(field, value);
+            }
+        }catch (IllegalArgumentException e){
+            DBP.printException(e);
+            throw new MalformedURLException();
+        }
+        return queries;
     }
 
 }

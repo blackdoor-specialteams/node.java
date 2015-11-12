@@ -9,3 +9,4 @@ buildNumber.properties
 .name
 .floo*
 .idea/
+node_modules/
