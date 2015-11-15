@@ -18,7 +18,7 @@ public enum ResponseLoop {
 	private ExecutorService executorService;
 
 	ResponseLoop(){
-		executorService = Executors.newWorkStealingPool();
+		executorService = BigPool.getExecutorService();
 	}
 
 	public static Future sendResponse(HttpResponse response, Socket sock){

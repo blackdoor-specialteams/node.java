@@ -58,7 +58,7 @@ public enum BlockingLoop{
 
 	BlockingLoop(){
 		executorService = MoreExecutors.listeningDecorator(
-				Executors.newWorkStealingPool());
+				BigPool.getExecutorService());
 	}
 
 	public <T> void submit(Callable<T> operation,

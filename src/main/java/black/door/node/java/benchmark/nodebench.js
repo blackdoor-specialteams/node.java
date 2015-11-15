@@ -1,5 +1,7 @@
-var express = require('express')
+var express = require('express');
 var app = express();
+var uuid = require('node-uuid');
+var fs = require('fs');
 //var http = require("http");
 
 function fibN(z){
@@ -11,13 +13,20 @@ function fibN(z){
 
 
 app.get('/fib/:n', function(req, res){
+    var sleep = req.query.sleep
 
-	n = req.params.n;
-	s = ""
-	for(i=0; i < n; i++){
-		s = s + fibN(i).toString() + "\n";
-	}
-	res.end(s);
+    //make this use promises
+    setTimeout(function() {
+	    var n = req.params.n;
+	    var s = "";
+	    for(i=0; i < n; i++){
+	        s = s + fibN(i).toString() + "\n";
+	    }
+	    fs.writeFile("outs/" + uuid.v4(), s, function(){
+	        res.end(s);
+	    });
+    }, sleep);
+
 })
 
 var server = app.listen(8080, function () {

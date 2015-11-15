@@ -48,7 +48,7 @@ public class RequestLoop implements Runnable, Closeable{
 	public RequestLoop(Server server) throws IOException {
 		this.server = server;
 		this.router = server.getRouter();
-		executorService = Executors.newWorkStealingPool();
+		executorService = BigPool.getExecutorService();
 		this.port = server.getPort();
 		serverSocket = new ServerSocket(port);
 		ow = new ObjectMapper().writer();

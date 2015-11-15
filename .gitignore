@@ -10,3 +10,4 @@ buildNumber.properties
 .floo*
 .idea/
 node_modules/
+outs/
