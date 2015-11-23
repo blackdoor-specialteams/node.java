@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
 /**
@@ -40,7 +41,6 @@ public class RequestLoop implements Runnable, Closeable{
 
 	private ServerSocket serverSocket;
 	private ExecutorService executorService;
-	private int port;
 	private Server server;
 	private Router router;
 	private ObjectWriter ow;
@@ -49,7 +49,7 @@ public class RequestLoop implements Runnable, Closeable{
 		this.server = server;
 		this.router = server.getRouter();
 		executorService = BigPool.getExecutorService();
-		this.port = server.getPort();
+		int port = server.getPort();
 		serverSocket = new ServerSocket(port);
 		ow = new ObjectMapper().writer();
 	}
@@ -86,6 +86,7 @@ public class RequestLoop implements Runnable, Closeable{
 			try {
 				InputStream sockIs = new BufferedInputStream(
 						sock.getInputStream());
+
 				while (server.getRunning().get()) {
 
 					InputStream is = new BoundedInputStream(
@@ -122,10 +123,13 @@ public class RequestLoop implements Runnable, Closeable{
 					}
 				}
 				if (!(e instanceof ClosedChannelException))
+					DBP.channel(StandardChannelName.WARNING).log(e.toString());
+					/*
 					DBP.channel(StandardChannelName.WARNING).log(e.toString() + (e.getMessage() == null
 								? ""
 								: ": " + e.getMessage()),
 						e.getStackTrace());
+					*/
 			}
 		};
 	}

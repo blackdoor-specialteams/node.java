@@ -6,6 +6,7 @@ import java.net.Socket;
  * Created by nfischer on 10/29/2015.
  */
 public class HttpContext {
+
 	HttpRequest request;
 	Socket sock;
 	HttpResponse response;
@@ -43,4 +44,5 @@ public class HttpContext {
 		this.response = response;
 		return this;
 	}
+
 }

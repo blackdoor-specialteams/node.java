@@ -57,7 +57,7 @@ public class HttpResponse {
         return ResponseLoop.sendResponse(this, context.getSock());
     }
 
-    HttpContext getContext(){
+    public HttpContext getContext(){
         return context;
     }
 

@@ -22,9 +22,12 @@ app.get('/fib/:n', function(req, res){
 	    for(i=0; i < n; i++){
 	        s = s + fibN(i).toString() + "\n";
 	    }
+	    /*
 	    fs.writeFile("outs/" + uuid.v4(), s, function(){
 	        res.end(s);
 	    });
+	    */
+	    res.end(s);
     }, sleep);
 
 })
